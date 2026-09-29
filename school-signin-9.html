@@ -1,0 +1,452 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
+<style>
+  .si * { box-sizing: border-box; }
+  .si { font-family: Georgia, 'Iowan Old Style', serif; background: #FBF7EC; color: #22304A; padding: 28px 20px; }
+  .si h1 { font-size: 26px; margin: 0; }
+  .si h2 { font-size: 15px; font-weight: normal; color: #5B6B57; border-bottom: 1px solid #E2D9C2; padding-bottom: 8px; margin: 28px 0 12px; }
+  .si input, .si select, .si button { font-family: inherit; font-size: 15px; }
+  .si .card { background: #fff; border: 1px solid #DCD3BE; border-radius: 6px; padding: 16px 18px; }
+  .si button.primary { background: #C1502E; color: #FFF6EE; border: none; border-radius: 4px; padding: 9px 16px; cursor: pointer; }
+  .si button.plain { background: none; border: 1px solid #C9BFA4; border-radius: 4px; padding: 7px 12px; cursor: pointer; font-size: 13px; color: #22304A; }
+  .si input, .si select { padding: 9px 10px; border: 1px solid #C9BFA4; border-radius: 4px; background: #FFFDF7; color: #22304A; }
+  .si .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .si .avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #E2D9C2; flex-shrink: 0; }
+  .si .avatar-xl { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; background: #E2D9C2; border: 3px solid #1F3D2E; }
+  .si .empty { color: #8A8270; font-style: italic; font-size: 14px; }
+  .si .err { color: #B23A2E; font-size: 13px; margin-top: 8px; }
+  .si .cam-wrap { position: relative; width: 100%; max-width: 420px; margin: 0 auto; }
+  .si video { width: 100%; border-radius: 10px; border: 2px solid #1F3D2E; background: #22304A; display: block; }
+  .si .scan-frame { position: absolute; inset: 12%; border: 3px solid #C1502E; border-radius: 12px; pointer-events: none; }
+  .si .status-line { text-align: center; font-size: 13px; color: #5B6B57; margin-top: 10px; }
+  .si .notify { max-width: 420px; margin: 18px auto 0; background: #fff; border: 1px solid #DCD3BE; border-left: 6px solid #1F3D2E; border-radius: 8px; padding: 18px 20px; text-align: center; }
+  .si .notify .name { font-size: 20px; margin: 10px 0 2px; }
+  .si .notify .idnum { color: #5B6B57; font-size: 14px; margin-bottom: 4px; }
+  .si .notify .time { font-family: 'Courier New', monospace; font-size: 15px; color: #1F3D2E; margin-top: 6px; }
+  .si .log-item { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px solid #EFE9D8; font-size: 14px; }
+  .si .log-item .meta { color: #8A8270; font-size: 12px; }
+  .si .entry { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid #DCD3BE; border-left: 4px solid #C1502E; border-radius: 4px; padding: 8px 14px; margin-bottom: 8px; }
+  .si .entry-left { display: flex; align-items: center; gap: 12px; }
+  .si details summary { cursor: pointer; font-size: 14px; color: #5B6B57; margin-bottom: 10px; }
+  .si .campus-btn { border: 1px solid #C9BFA4; background: #FFFDF7; color: #22304A; border-radius: 20px; padding: 6px 16px; cursor: pointer; font-size: 13px; }
+  .si .campus-btn.active { background: #1F3D2E; color: #FFF6EE; border-color: #1F3D2E; }
+  .si .campus-tag { display: inline-block; font-size: 11px; background: #F0F5EE; color: #1F3D2E; border: 1px solid #1F3D2E; border-radius: 10px; padding: 1px 8px; margin-left: 6px; }
+  .si .log-filter { text-align: center; margin-bottom: 10px; }
+  .si .flip-cam-btn { position: absolute; bottom: 10px; right: 10px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(34,48,74,0.75); color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .si .flip-cam-btn:active { background: rgba(34,48,74,0.95); }
+  .si .roster-item { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px solid #EFE9D8; }
+  .si .roster-item .info { flex: 1; }
+  .si .roster-item canvas { cursor: pointer; }
+  .si .qr-modal-backdrop { position: fixed; inset: 0; background: rgba(34,48,74,0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .si .qr-modal { background: #fff; border-radius: 10px; padding: 28px 32px; text-align: center; max-width: 90vw; }
+  .si .qr-modal canvas { max-width: 70vw; }
+  .si .qr-modal .qr-name { font-size: 18px; margin-top: 14px; }
+  .si .qr-modal .qr-id { color: #5B6B57; font-size: 14px; margin-bottom: 4px; }
+  .si .qr-modal .qr-actions { margin-top: 16px; display: flex; gap: 10px; justify-content: center; }
+</style>
+
+<div class="si">
+  <div class="row" style="justify-content: space-between; border-bottom: 3px solid #1F3D2E; padding-bottom: 14px;">
+    <h1>School sign-in</h1>
+    <span style="font-family:'Courier New',monospace; font-size:13px; color:#5B6B57;" id="ss-count">0 currently in</span>
+  </div>
+
+  <div class="row" style="justify-content:center; margin-top: 14px; gap: 8px;">
+    <span style="font-size: 13px; color: #5B6B57; align-self:center;">This kiosk is:</span>
+    <button class="campus-btn" data-campus="Main Campus" id="ss-campus-main">Main Campus</button>
+    <button class="campus-btn" data-campus="Seawolf Campus" id="ss-campus-seaweed">Seawolf Campus</button>
+  </div>
+
+  <h2>Scan your QR code</h2>
+  <div class="cam-wrap">
+    <video id="ss-video" autoplay playsinline muted></video>
+    <div class="scan-frame"></div>
+    <canvas id="ss-canvas" style="display:none;"></canvas>
+    <button id="ss-flip-cam" class="flip-cam-btn" title="Flip camera">&#128260;</button>
+  </div>
+  <div class="status-line" id="ss-status">Starting camera...</div>
+  <div class="err" id="ss-error" style="text-align:center;"></div>
+
+  <div class="row" style="justify-content:center; margin-top: 10px;">
+    <input id="ss-manual-input" placeholder="Or type student ID" style="width: 220px;" autocomplete="off" />
+  </div>
+
+  <div id="ss-notify"></div>
+
+  <h2>Currently signed in (<span id="ss-active-count">0</span>)</h2>
+  <div id="ss-active-list"></div>
+
+  <h2>Sign-in / sign-out history</h2>
+  <div class="log-filter">
+    <select id="ss-log-filter">
+      <option value="All">All campuses</option>
+      <option value="Main Campus">Main Campus only</option>
+      <option value="Seawolf Campus">Seawolf Campus only</option>
+    </select>
+  </div>
+  <div id="ss-log"></div>
+
+  <details style="margin-top: 24px;">
+    <summary>Manage roster</summary>
+    <div class="card">
+      <div class="row">
+        <input id="ss-new-id" placeholder="Student ID" style="width: 140px;" />
+        <input id="ss-new-name" placeholder="Full name" style="flex: 1 1 160px;" />
+        <input id="ss-new-photo" type="file" accept="image/*" />
+        <button class="primary" id="ss-add-student">Add student</button>
+      </div>
+      <div id="ss-roster-error" class="err"></div>
+      <div id="ss-roster-list" style="margin-top: 14px;"></div>
+    </div>
+  </details>
+
+  <div id="ss-qr-modal-backdrop" class="qr-modal-backdrop" style="display:none;">
+    <div class="qr-modal">
+      <canvas id="ss-qr-big"></canvas>
+      <div class="qr-name" id="ss-qr-modal-name"></div>
+      <div class="qr-id" id="ss-qr-modal-id"></div>
+      <div class="qr-actions">
+        <button class="primary" id="ss-qr-print-btn">Print</button>
+        <button class="plain" id="ss-qr-close-btn">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  let roster = {};
+  let active = [];   // students currently signed in, not yet signed out
+  let history = [];  // completed sign-in -> sign-out pairs
+  let scanning = true;
+  let camStream = null;
+  let camLoopId = null;
+  let lastScanId = null;
+  let lastScanTime = 0;
+  let currentCampus = "Main Campus";
+  let logFilter = "All";
+  let videoDevices = [];
+  let deviceIndex = 0;
+  let facingMode = "environment";
+  let nextEntryId = 1;
+
+  const $ = (id) => document.getElementById(id);
+  const fmtTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+  const fmtDate = (ts) => new Date(ts).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  const fmtDateTime = (ts) => `${fmtDate(ts)}, ${fmtTime(ts)}`;
+
+  // Storage: use Claude's window.storage when available (in-chat preview),
+  // otherwise fall back to the browser's own localStorage (e.g. once hosted on GitHub Pages).
+  // Note: localStorage is per-browser/device only — it won't share data between
+  // separate kiosks unless you wire up a real shared backend later.
+  const store = {
+    async get(key) {
+      if (window.storage) {
+        try {
+          const r = await window.storage.get(key, false);
+          return r ? r.value : null;
+        } catch (e) { /* fall through to localStorage */ }
+      }
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    },
+    async set(key, value) {
+      if (window.storage) {
+        try { await window.storage.set(key, value, false); return; } catch (e) { /* fall through */ }
+      }
+      try { localStorage.setItem(key, value); } catch (e) { /* storage unavailable — give up quietly */ }
+    }
+  };
+
+  async function load() {
+    const r = await store.get("schoolsignin:roster");
+    roster = r ? JSON.parse(r) : {};
+    const a = await store.get("schoolsignin:active");
+    active = a ? JSON.parse(a) : [];
+    const h = await store.get("schoolsignin:history");
+    history = h ? JSON.parse(h) : [];
+    nextEntryId = 1 + Math.max(0, ...active.map((x) => x.entryId || 0), ...history.map((x) => x.entryId || 0));
+    renderActive();
+    renderHistory();
+    renderRoster();
+  }
+  function saveRoster() { store.set("schoolsignin:roster", JSON.stringify(roster)); }
+  function saveActive() { store.set("schoolsignin:active", JSON.stringify(active)); }
+  function saveHistory() { store.set("schoolsignin:history", JSON.stringify(history)); }
+
+  function renderActive() {
+    $("ss-active-count").textContent = active.length;
+    $("ss-count").textContent = active.length + " currently in";
+    const el = $("ss-active-list");
+    if (active.length === 0) { el.innerHTML = '<p class="empty">Nobody is currently signed in.</p>'; return; }
+    el.innerHTML = active.slice().reverse().map((e) => `
+      <div class="entry">
+        <div class="entry-left">
+          <img class="avatar" src="${e.photo || ''}" onerror="this.style.visibility='hidden'" />
+          <div>
+            <div>${e.name} <span class="campus-tag">${e.campus || "Main Campus"}</span></div>
+            <div class="meta">ID ${e.studentId} · signed in ${fmtDateTime(e.timeIn)}</div>
+          </div>
+        </div>
+      </div>`).join("");
+  }
+
+  function renderHistory() {
+    let rows = history.slice();
+    if (logFilter !== "All") rows = rows.filter((e) => (e.campus || "Main Campus") === logFilter);
+    const el = $("ss-log");
+    if (rows.length === 0) { el.innerHTML = '<p class="empty">No completed sign-ins yet.</p>'; return; }
+    el.innerHTML = rows.slice().reverse().slice(0, 100).map((e) => `
+      <div class="log-item">
+        <img class="avatar" src="${e.photo || ''}" onerror="this.style.visibility='hidden'" />
+        <div style="flex:1;">
+          <div>${e.name} <span class="meta">ID ${e.studentId}</span><span class="campus-tag">${e.campus || "Main Campus"}</span></div>
+          <div class="meta">In: ${fmtDateTime(e.timeIn)} &nbsp;·&nbsp; Out: ${fmtDateTime(e.timeOut)}</div>
+        </div>
+      </div>`).join("");
+  }
+
+  function renderRoster() {
+    const ids = Object.keys(roster);
+    const el = $("ss-roster-list");
+    if (ids.length === 0) { el.innerHTML = '<p class="empty">No students added yet.</p>'; return; }
+    el.innerHTML = ids.map((id) => {
+      const s = roster[id];
+      return `<div class="roster-item">
+        <img class="avatar" src="${s.photo || ''}" onerror="this.style.visibility='hidden'" />
+        <div class="info"><div>${s.name}</div><div class="meta" style="color:#8A8270;font-size:12px;">ID ${id}</div></div>
+        <canvas id="ss-qr-${id}" width="56" height="56" onclick="window.__ssShowQr('${id}')"></canvas>
+        <button class="plain" onclick="window.__ssRemove('${id}')">Remove</button>
+      </div>`;
+    }).join("");
+    ids.forEach((id) => {
+      const c = $("ss-qr-" + id);
+      if (c && window.QRious) new QRious({ element: c, value: id, size: 56 });
+    });
+  }
+
+  window.__ssRemove = function (id) {
+    const s = roster[id];
+    const label = s ? `${s.name} (ID ${id})` : `ID ${id}`;
+    if (!window.confirm(`Remove ${label} from the roster? Their QR code will stop working until you re-add them.`)) return;
+    delete roster[id];
+    renderRoster();
+    saveRoster();
+  };
+
+  window.__ssShowQr = function (id) {
+    const s = roster[id];
+    if (!s) return;
+    $("ss-qr-modal-name").textContent = s.name;
+    $("ss-qr-modal-id").textContent = "ID " + id;
+    const canvas = $("ss-qr-big");
+    if (window.QRious) new QRious({ element: canvas, value: id, size: 320 });
+    $("ss-qr-modal-backdrop").style.display = "flex";
+  };
+
+  function closeQrModal() {
+    $("ss-qr-modal-backdrop").style.display = "none";
+  }
+  $("ss-qr-close-btn").addEventListener("click", closeQrModal);
+  $("ss-qr-modal-backdrop").addEventListener("click", (e) => {
+    if (e.target.id === "ss-qr-modal-backdrop") closeQrModal();
+  });
+  $("ss-qr-print-btn").addEventListener("click", () => {
+    const canvas = $("ss-qr-big");
+    const name = $("ss-qr-modal-name").textContent;
+    const idText = $("ss-qr-modal-id").textContent;
+    const dataUrl = canvas.toDataURL("image/png");
+    const w = window.open("", "_blank");
+    if (!w) {
+      alert("Your browser blocked the print window pop-up. Please allow pop-ups for this site and try again.");
+      return;
+    }
+    w.document.write(`
+      <html><head><title>${name} — QR Pass</title></head>
+      <body style="text-align:center; font-family: Georgia, serif; padding-top: 40px;">
+        <img src="${dataUrl}" style="width:320px; height:320px;" />
+        <div style="font-size:20px; margin-top:14px;">${name}</div>
+        <div style="font-size:14px; color:#555;">${idText}</div>
+        <script>
+          window.onload = function() { window.print(); };
+        <\/script>
+      </body></html>
+    `);
+    w.document.close();
+  });
+
+  function handleScan(rawId) {
+    const id = String(rawId).trim();
+    if (!id) return;
+    const now = Date.now();
+    if (id === lastScanId && now - lastScanTime < 4000) return;
+    lastScanId = id; lastScanTime = now;
+
+    $("ss-error").textContent = "";
+    const s = roster[id];
+    if (!s) {
+      $("ss-error").textContent = `No student with ID "${id}". Add them under "Manage roster".`;
+      $("ss-notify").innerHTML = "";
+      return;
+    }
+
+    const activeEntry = active.find((e) => e.studentId === id);
+    if (activeEntry) {
+      // Sign out
+      active = active.filter((e) => e.entryId !== activeEntry.entryId);
+      const record = { ...activeEntry, timeOut: now };
+      history.push(record);
+      renderActive(); renderHistory();
+      saveActive(); saveHistory();
+      $("ss-notify").innerHTML = `<div class="notify">
+        <img class="avatar-xl" src="${s.photo || ''}" onerror="this.style.visibility='hidden'" />
+        <div class="name">${s.name}</div>
+        <div class="idnum">ID ${id}</div>
+        <div class="time">Signed OUT ${fmtDateTime(now)} &middot; ${activeEntry.campus || currentCampus}</div>
+      </div>`;
+    } else {
+      // Sign in
+      const entry = { entryId: nextEntryId++, studentId: id, name: s.name, photo: s.photo || "", timeIn: now, campus: currentCampus };
+      active.push(entry);
+      renderActive();
+      saveActive();
+      $("ss-notify").innerHTML = `<div class="notify">
+        <img class="avatar-xl" src="${s.photo || ''}" onerror="this.style.visibility='hidden'" />
+        <div class="name">${s.name}</div>
+        <div class="idnum">ID ${id}</div>
+        <div class="time">Signed IN ${fmtDateTime(now)} &middot; ${currentCampus}</div>
+      </div>`;
+    }
+  }
+
+  $("ss-manual-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      handleScan(e.target.value);
+      e.target.value = "";
+    }
+  });
+
+  async function startCamera() {
+    await refreshDeviceList();
+    await openCamera();
+  }
+
+  async function refreshDeviceList() {
+    try {
+      const all = await navigator.mediaDevices.enumerateDevices();
+      videoDevices = all.filter((d) => d.kind === "videoinput");
+    } catch (e) {
+      videoDevices = [];
+    }
+  }
+
+  function stopCamera() {
+    scanning = false;
+    if (camLoopId) cancelAnimationFrame(camLoopId);
+    if (camStream) {
+      camStream.getTracks().forEach((t) => t.stop());
+      camStream = null;
+    }
+  }
+
+  async function openCamera() {
+    stopCamera();
+    scanning = true;
+    $("ss-error").textContent = "";
+    $("ss-status").textContent = "Starting camera...";
+
+    // Build a constraint: prefer a specific device once we know the list,
+    // otherwise fall back to facingMode (works even before permission/labels are known).
+    let constraints;
+    if (videoDevices.length > 0 && videoDevices[deviceIndex]) {
+      constraints = { video: { deviceId: { exact: videoDevices[deviceIndex].deviceId } } };
+    } else {
+      constraints = { video: { facingMode: { ideal: facingMode } } };
+    }
+
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      // Retry once with the loosest possible constraint (helps some desktop browsers / iPad Safari)
+      try {
+        camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      } catch (err2) {
+        $("ss-status").textContent = "Camera not available here";
+        $("ss-error").textContent = "This browser or device didn't allow camera access. Use the student ID field below, or check your camera permission in browser/site settings.";
+        return;
+      }
+    }
+
+    // Now that permission is granted, device labels become available — refresh the list
+    // so the flip button can cycle through real devices next time.
+    await refreshDeviceList();
+
+    const video = $("ss-video");
+    video.srcObject = camStream;
+    $("ss-status").textContent = "Point a student's QR code at the camera";
+    const canvas = $("ss-canvas");
+    const ctx = canvas.getContext("2d");
+    function tick() {
+      if (!scanning) return;
+      if (video.readyState === video.HAVE_ENOUGH_DATA && window.jsQR) {
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(img.data, img.width, img.height);
+        if (code && code.data) handleScan(code.data);
+      }
+      camLoopId = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  $("ss-flip-cam").addEventListener("click", async () => {
+    if (videoDevices.length > 1) {
+      deviceIndex = (deviceIndex + 1) % videoDevices.length;
+    } else {
+      // No device list yet, or only one device reported (common before permission,
+      // or on phones that expose one device but multiple facing modes) — toggle facingMode instead.
+      facingMode = facingMode === "environment" ? "user" : "environment";
+    }
+    await openCamera();
+  });
+
+  $("ss-add-student").addEventListener("click", () => {
+    const id = $("ss-new-id").value.trim();
+    const name = $("ss-new-name").value.trim();
+    const file = $("ss-new-photo").files[0];
+    $("ss-roster-error").textContent = "";
+    if (!id || !name) { $("ss-roster-error").textContent = "Enter both a student ID and name."; return; }
+    if (roster[id]) { $("ss-roster-error").textContent = "That ID is already in the roster."; return; }
+    function save(photoDataUrl) {
+      roster[id] = { name, photo: photoDataUrl || "" };
+      renderRoster();
+      saveRoster();
+      $("ss-new-id").value = ""; $("ss-new-name").value = ""; $("ss-new-photo").value = "";
+    }
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => save(reader.result);
+      reader.readAsDataURL(file);
+    } else {
+      save("");
+    }
+  });
+
+  function setCampus(c) {
+    currentCampus = c;
+    $("ss-campus-main").classList.toggle("active", c === "Main Campus");
+    $("ss-campus-seaweed").classList.toggle("active", c === "Seawolf Campus");
+  }
+  $("ss-campus-main").addEventListener("click", () => setCampus("Main Campus"));
+  $("ss-campus-seaweed").addEventListener("click", () => setCampus("Seawolf Campus"));
+  setCampus("Main Campus");
+
+  $("ss-log-filter").addEventListener("change", (e) => {
+    logFilter = e.target.value;
+    renderHistory();
+  });
+
+  load();
+  startCamera();
+})();
+</script>
